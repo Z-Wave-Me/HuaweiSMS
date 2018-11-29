@@ -1,113 +1,22 @@
 {
-	"dependencies": [],
-	"singleton": false,
-	"category": "support_external_dev",
-	"author": "Z-Wave.Me",
-	"homepage": "http://razberry.z-wave.me",
-	"icon": "icon.png",
-	"moduleName":"HuaweiSMS",
-	"version": "1.0.1",
-	"maturity": "beta",
-	"repository": {
-			"type": "git",
-			"source": "https://github.com/Z-Wave-Me/home-automation"
-	},
-	"defaults": {
-		"title": "__m_title__",
-		"description": "__m_descr__",
-		"phone": "+79991234567",
-		"prefix": "__prefix__",
-		"modem_to_select": "E8372",
-		"user": "",
-		"password": "",
-		"read_interval": "10",
-		"commands": "",
-		"white_list":""
-	},
-	"schema": {
-		"description": "__description__",
-		"type": "object",
-		"properties": {
-			"phone": {
-				"required": true,
-				"pattern": "\\+[0-9]{5,}"
-			},
-			"prefix": {
-				"required": false
-			},
-			"modem_to_select": {
-				"field": "enum",
-				"enum": ["E8372", "E3372", "E303s-2", "M100-4"],
-				"required": true
-			},
-			"read_interval":{
-				"required": true
-			},
-			"user": {
-				"required": false
-			},
-			"password": {
-				"required": false
-			},
-			"white_list": {
-                "type": "array",
-                "items": {
-                    "required":false,
-                    "pattern": "\\+[0-9]{5,}"
-                }
-            },
-			"commands": {
-				"type": "array",
-				"items": {
-					"type": "object",
-					"properties": {
-						"command_name": {
-							"required": true
-						},
-						"device": {
-							"field": "enum",
-							"datasource": "namespaces",
-							"enum": "namespaces:devices_toggleButton:deviceId",
-							"required": true
-						}
-					}
-				}
-			}
-		},
-		"required": false
-	},
-	"options": {
-		"fields": {
-			"phone": {
-				"label": "__l_phone__",
-				"helper": "__h_phone__"
-			},
-			"prefix": {
-				"label": "__l_prefix__"
-			},
-			"read_interval":{
-				"label": "__l_read_interval__"
-			},
-			"user": {
-				"label": "__l_user__",
-				"helper": "__h_user__"
-			},
-			"password": {
-				"label": "__l_password__",
-				"helper": "__h_password__"
-			},
-			"modem_to_select": {
-				"label": "__l_modselect__",
-				"field": "optionLabels",
-				"optionLabels": ["Huawei E8372","Huawei E3372","MTS E303s-2","Megafon M100-4"]
-			},
-			"white_list": {
-                "label": "__l_white_list__",
-                "helper":"__h_phone__"
-            },
-			"commands": {
-				"label":"__l_commands__"
-			}
-		}
-	}
+	"m_title":"Huawei Notifications",
+	"m_descr":"This app allows you to perform commands by sending SMS using your HUAWEI modem and sending confirmation messages <br> List of supported devices: Huawei E372, E8372, E3372, E3272, Megafon M100-4, MTS E303s-2, 824F, 824FT </br>",
+	"prefix":"enter your message here",
+	"l_phone":"Phone number to send SMS.",
+	"h_phone": "In form of +79261234567", 
+	"l_prefix":"Prefix for all messages",
+	"l_modselect":"Select your Huawei modem",
+	"l_user":"Username",
+	"l_read_interval":"Enter the time you want messages to be checked(sec)",
+	"l_commands": "Commands",
+	"l_white_list":"Enter phone numbers. These phones will be allowed to perform commands and initiate scenes",
+	"E8372":"Huawei E8372",
+	"E3372":"Huawei E3372",
+	"E303s-2":"MTS E303s-2",
+	"M100-4":"Megafon M100-4",
+	"h_user":"Empty if no login required. Usually it is admin",
+	"l_password":"Password",
+	"h_password":"Empty if no login required. Usually it is admin",
+	"notification":"Notification"
 }
+
