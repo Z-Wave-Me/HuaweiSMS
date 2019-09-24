@@ -6,7 +6,7 @@
 	"homepage": "http://razberry.z-wave.me",
 	"icon": "icon.png",
 	"moduleName":"HuaweiSMS",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"maturity": "beta",
 	"repository": {
 			"type": "git",
@@ -15,29 +15,25 @@
 	"defaults": {
 		"title": "__m_title__",
 		"description": "__m_descr__",
-		"phone": "+79991234567",
 		"prefix": "__prefix__",
 		"modem_to_select": "E8372",
 		"user": "",
 		"password": "",
+		"phones": [],
 		"read_interval": "10",
-		"commands": "",
-		"white_list":""
+		"commands": [],
+		"white_list":[]
 	},
 	"schema": {
 		"description": "__description__",
 		"type": "object",
 		"properties": {
-			"phone": {
-				"required": true,
-				"pattern": "\\+[0-9]{5,}"
-			},
 			"prefix": {
 				"required": false
 			},
 			"modem_to_select": {
 				"field": "enum",
-				"enum": ["E8372", "E3372", "E303s-2", "M100-4"],
+				"enum": ["E8372", "E3372", "E303s-2", "M100-4", "E3272", "E372", "824F", "824FT"],
 				"required": true
 			},
 			"read_interval":{
@@ -48,6 +44,14 @@
 			},
 			"password": {
 				"required": false
+			},
+			"phones": {
+                "type": "array",
+                "items": {
+					"required": true,
+					"pattern": "\\+[0-9]{5,}",
+					"default": "+79991234567"
+				}
 			},
 			"white_list": {
                 "type": "array",
@@ -78,12 +82,9 @@
 	},
 	"options": {
 		"fields": {
-			"phone": {
-				"label": "__l_phone__",
-				"helper": "__h_phone__"
-			},
 			"prefix": {
-				"label": "__l_prefix__"
+				"label": "__l_prefix__",
+				"helper": "__h_prefix__"
 			},
 			"read_interval":{
 				"label": "__l_read_interval__"
@@ -99,14 +100,19 @@
 			"modem_to_select": {
 				"label": "__l_modselect__",
 				"field": "optionLabels",
-				"optionLabels": ["Huawei E8372","Huawei E3372","MTS E303s-2","Megafon M100-4"]
+				"optionLabels": ["Huawei E8372","Huawei E3372","MTS E303s-2","Megafon M100-4","Huawei E3272","Huawei E372","MTS 824F","MTS 824FT"]
+			},
+			"phones": {
+				"label": "__l_phone__",
+				"helper": "__h_phone__"
 			},
 			"white_list": {
                 "label": "__l_white_list__",
                 "helper":"__h_phone__"
             },
 			"commands": {
-				"label":"__l_commands__"
+				"label":"__l_commands__",
+				"helper":"__h_commands__"
 			}
 		}
 	}
