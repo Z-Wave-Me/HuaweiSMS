@@ -1,6 +1,6 @@
 /*** HuaweiSMS Z-Way HA module *******************************************
 
- Version: 1.0.1
+ Version: 1.0.2
  (c) Z-Wave.Me, 2018
  -----------------------------------------------------------------------------
 Author:  Avaliani Alexander <aam@z-wave.me>, Poltorak Serguei <ps@z-wave.me>
@@ -22,7 +22,7 @@ function HuaweiSMS(id, controller) {
         READ_SMS: 2
     };
 
-    this.readInterval = this.config.read_interval;//10; // in seconds
+    this.readInterval = 10; // in seconds
     this.readQueue = 20; // read 20 first unread messages only - should be enough. Huawei don't work with larger values
 }
 
@@ -35,18 +35,21 @@ _module = HuaweiSMS;
 HuaweiSMS.prototype.init = function (config) {
 	HuaweiSMS.super_.prototype.init.call(this, config);
 	var self = this;
-    
+
+    this.config.title = this.getInstanceTitle();
     this.sendQueue = [];
     this.indecesMarkAsRead = [];
 
     this.state = this.STATE.IDLE;
     this.ip = this.getModelIP();
+    if (this.config.read_interval) this.readInterval = this.config.read_interval;
 
     // for incoming messages(commands)
     this.msgCount = 0;
     this.commandList = self.config.commands.slice();
     this.whiteList = self.config.white_list.slice();
-    
+    this.outGoingList = self.config.phones.slice();
+
     this.vDev = this.controller.devices.create({
 		deviceId: this.constructor.name + "_" + this.id,
 		defaults: {
@@ -149,7 +152,6 @@ HuaweiSMS.prototype.readMessages = function() {
 
 HuaweiSMS.prototype.getToken = function() {
     var self = this;
-
     if (this.state === this.STATE.IDLE) this.state = this.STATE.TOKEN;
 
 	http.request({
@@ -165,6 +167,7 @@ HuaweiSMS.prototype.getToken = function() {
 
             self.session = resp.data.findOne("//SesInfo/text()");
             self.token = resp.data.findOne("//TokInfo/text()");
+            self.cookie = self.session;
             if (self.config.user) {
                 self.loginRequest();  
             } else {
@@ -227,22 +230,19 @@ HuaweiSMS.prototype.readSend = function() {
 
 HuaweiSMS.prototype.checkMessages = function() {
     var self = this;
-
     http.request({
         url: "http://" + self.ip + "/api/sms/sms-count",
         async: true,
         contentType: "text/xml",
         headers: {
-           "Cookie": self.cookie
+            "Cookie": self.cookie,
        },
         success: function(resp) {
             if (typeof resp.data !== "object" || !resp.data.isXML) {
                 console.log("Bad response: " + resp.data);
                 return;
             }  
-
             self.msgCount = parseInt(resp.data.findOne("//LocalUnread/text()"), 10);
-            //console.log("!!! You have " + self.msgCount + " new message(s)");
             if (self.msgCount) {
                 self.state = self.STATE.READ_SMS;
                 self.readMessages();
@@ -261,7 +261,6 @@ HuaweiSMS.prototype.checkMessages = function() {
 
 HuaweiSMS.prototype.getMessages = function(callback) {
     var self = this;
-
     http.request({
         url: "http://" + this.ip + "/api/sms/sms-list",
         async: true,
@@ -289,25 +288,23 @@ HuaweiSMS.prototype.getMessages = function(callback) {
                 self.indecesMarkAsRead.push(messageObject.index);
                 if (self.whiteList.indexOf(messageObject.phone) !== -1) {
                     
-                    var cmds = self.commandList.filter(function(cmd) { return cmd.command_name === messageObject.content; });
+                    var cmd = self.commandList.filter(function(cmd) { return cmd.command_name === messageObject.content; })[0];
 
-                    if (cmds.length === 0) {
+                    if (!cmd) {
                         self.addNotification('warning', "Command " + messageObject.content + " not found in commands list", 'module');
+                    } else {
+                        // Send back confirmation
+                        var smsObject = {
+                            message: "Command <" + messageObject.content + "> done!",
+                            phone: messageObject.phone,
+                        };
+                        self.sendQueue.push(smsObject);
+
+                        var vDev = self.controller.devices.get(cmd.device);
+                        if (vDev) {
+                            vDev.performCommand("on");
+                        }
                     }
-
-                    cmds.map(function(cmd) {
-                            // Send back confirmation
-                            var smsObject = {
-                                message: "Command <" + messageObject.content + "> done!",
-                                phone: messageObject.phone,
-                            };
-                            self.sendQueue.push(smsObject);
-
-                            var vDev = self.controller.devices.get(cmd.device);
-                            if (vDev) {
-                                vDev.performCommand("on");
-                            }
-                    });
                 } else {
                     self.addNotification('warning', "Phone number " + messageObject.phone + " is not in your white list", 'module');
                 }
@@ -325,7 +322,6 @@ HuaweiSMS.prototype.getMessages = function(callback) {
 
 HuaweiSMS.prototype.sendMessage = function() {
     var self = this;
-    
     if (this.sendQueue.length === 0) return;
 
     var smsObject = this.sendQueue.shift();
@@ -336,7 +332,7 @@ HuaweiSMS.prototype.sendMessage = function() {
         async: true,
         method: "POST",
         contentType: "text/xml",
-        data: "<request><Index>-1</Index><Phones><Phone>" + smsObject.phone + "</Phone></Phones><Sca></Sca><Content>"+ this.escapeXML(smsObject.message) + "</Content><Length>-1</Length><Reserved>1</Reserved><Date>-1</Date></request>",
+        data: "<request><Index>-1</Index><Phones><Phone>" + smsObject.phone + "</Phone></Phones><Sca></Sca><Content>"+ self.escapeXML(smsObject.message) + "</Content><Length>-1</Length><Reserved>1</Reserved><Date>-1</Date></request>",
         headers: {
             "Content-Type": "text/xml",
             "Cookie": self.cookie,
@@ -364,12 +360,11 @@ HuaweiSMS.prototype.sendMessage = function() {
             self.addNotification('error', 'Error sending message thru the modem in the following app instance: ' + self.config.title, 'module');
             self.sendMessages();
         }
-    });
+    });        
 };
 
 HuaweiSMS.prototype.markAsRead = function(index) {
     var self = this ;
-
     http.request({
         url: "http://" + self.ip + "/api/sms/set-read",
         async: true,
@@ -408,10 +403,13 @@ HuaweiSMS.prototype.getModelIP = function() {
     switch(this.config.modem_to_select) {
         case "E303s-2":
         case "M100-4":
+        case "824FT":
+        case "824F"
             return "192.168.1.1";
 
         case "E3372":
         case "E8372":
+        case "E3272":
         default:
             return "192.168.8.1";
     }
